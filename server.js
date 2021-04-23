@@ -12,29 +12,7 @@ const app = express();
 
 const PORT = process.env.PORT || 8080;
 
-// mongoose.connect('mongodb+srv://tobias:root@cluster0.dyzxp.mongodb.net/productos?retryWrites=true&w=majority', {
-//     useNewUrlParser: true,
-//     useUnifiedTopology: true
-// }, err => {
-//     if(err) throw Error(`Unable to connect to database: ${err}`);
-//     console.log('Conection success');
-//     const server = app.listen(PORT, () => {
-
-//         try{
-//             if(!fs.existsSync('./correo.dat')){
-//                 fs.writeFileSync('./correo.dat', 'rodriguezviautobias@gmail.com');
-//             }
-//         }
-//         catch(err){
-//             console.log(err);
-//         }
-//         console.log(`Listening to port ${server.address().port}`);
-//     });
-//     server.on('error', error => console.log(`Server error: ${error}`));
-
-// });
-
-mongoose.connect('mongodb://localhost/productos', {
+mongoose.connect('mongodb+srv://tobias:root@cluster0.dyzxp.mongodb.net/productos?retryWrites=true&w=majority', {
     useNewUrlParser: true,
     useUnifiedTopology: true
 }, err => {
@@ -43,6 +21,9 @@ mongoose.connect('mongodb://localhost/productos', {
     const server = app.listen(PORT, () => {
 
         try{
+                if (!fs.existsSync('./uploads')){
+                    fs.mkdirSync('./uploads');
+                }
             if(!fs.existsSync('./correo.dat')){
                 fs.writeFileSync('./correo.dat', 'rodriguezviautobias@gmail.com');
             }
@@ -55,6 +36,30 @@ mongoose.connect('mongodb://localhost/productos', {
     server.on('error', error => console.log(`Server error: ${error}`));
 
 });
+
+// mongoose.connect('mongodb://localhost/productos', {
+//     useNewUrlParser: true,
+//     useUnifiedTopology: true
+// }, err => {
+//     if(err) throw Error(`Unable to connect to database: ${err}`);
+//     console.log('Conection success');
+//     const server = app.listen(PORT, () => {
+
+//         try{
+
+
+//             if(!fs.existsSync('./correo.dat')){
+//                 fs.writeFileSync('./correo.dat', 'rodriguezviautobias@gmail.com');
+//             }
+//         }
+//         catch(err){
+//             console.log(err);
+//         }
+//         console.log(`Listening to port ${server.address().port}`);
+//     });
+//     server.on('error', error => console.log(`Server error: ${error}`));
+
+// });
 
 const storage = multer.diskStorage({
     destination: function (req,file,cb) {
