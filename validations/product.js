@@ -2,9 +2,9 @@ import Joi from '@hapi/joi';
 
 const validateProduct = (product) => {
     const productSchema = Joi.object({
-        name: Joi.string().alphanum().required(),
+        name: Joi.string().required().regex(/^\s*\w+(?:[^\w,]+\w+)*[^,\w]*$/),
         price: Joi.number().positive().allow(0).required(),
-        description: Joi.string().alphanum().required(),
+        description: Joi.string().required().regex(/^\s*\w+(?:[^\w,]+\w+)*[^,\w]*$/),
          photo: Joi.required()
     });
 

@@ -15,7 +15,7 @@ const app = express();
 
 const PORT = process.env.PORT || 8080;
 
-//Atlas MongoDB
+// Atlas MongoDB
 mongoose.connect('mongodb+srv://tobias:root@cluster0.dyzxp.mongodb.net/productos?retryWrites=true&w=majority', {
     useNewUrlParser: true,
     useUnifiedTopology: true
