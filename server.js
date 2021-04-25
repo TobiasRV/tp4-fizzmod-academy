@@ -7,11 +7,15 @@ import { allowInsecurePrototypeAccess } from '@handlebars/allow-prototype-access
 import multer from 'multer';
 import mail from './util/mail.js';
 import fs from 'fs';
+import validation from './validations/product.js';
+
+
 
 const app = express();
 
 const PORT = process.env.PORT || 8080;
 
+//Atlas MongoDB
 mongoose.connect('mongodb+srv://tobias:root@cluster0.dyzxp.mongodb.net/productos?retryWrites=true&w=majority', {
     useNewUrlParser: true,
     useUnifiedTopology: true
@@ -37,6 +41,7 @@ mongoose.connect('mongodb+srv://tobias:root@cluster0.dyzxp.mongodb.net/productos
 
 });
 
+// //Local mongodb
 // mongoose.connect('mongodb://localhost/productos', {
 //     useNewUrlParser: true,
 //     useUnifiedTopology: true
@@ -44,9 +49,7 @@ mongoose.connect('mongodb+srv://tobias:root@cluster0.dyzxp.mongodb.net/productos
 //     if(err) throw Error(`Unable to connect to database: ${err}`);
 //     console.log('Conection success');
 //     const server = app.listen(PORT, () => {
-
 //         try{
-
 
 //             if(!fs.existsSync('./correo.dat')){
 //                 fs.writeFileSync('./correo.dat', 'rodriguezviautobias@gmail.com');
@@ -61,12 +64,17 @@ mongoose.connect('mongodb+srv://tobias:root@cluster0.dyzxp.mongodb.net/productos
 
 // });
 
+//Multer Config
 const storage = multer.diskStorage({
     destination: function (req,file,cb) {
         cb(null, 'uploads');
     },
     filename: function(req,file,cb) {
         cb(null, file.originalname.split('.')[0] + '-' + Date.now() + '.jpg');
+    },
+    onError: function(err,next){
+        console.log(`Multer error ${err}`);
+        next(err);
     }
 });
 const upload = multer({storage: storage});
@@ -89,50 +97,73 @@ app.get('/' , (req , res)=>{
     res.render('form');
 });
 
-let count = 0;
+//Store form data in mongo and send mail when needed
 app.post('/data' , upload.single('photo'),(req , res)=>{
     let product = req.body;
-    product.photo = req.file.filename;
-    let newProduct = new model.product(product);
-    newProduct.save(err => {
-        if(err) throw new Error(`Query error: ${err}`);
-        console.log('Product load');
-        count++;
-        if(count == 10){
-            count = 0;
-            mail.sendMail();
+    if(req.file.filename != null){
+        product.photo = req.file.filename;
+        let val = validation.validateProduct(product);
+        if(val.result){
+            let newProduct = new model.product(product);
+            console.log(newProduct);
+            newProduct.save(err => {
+                if(err) throw new Error(`Query error: ${err}`);
+                console.log('Product load');
+                let products = model.product.find({}, (err) => {
+                    if(err) throw new Error(`Reading error: ${err}`);
+                }).lean();
+                if(products.length%10 === 0){
+                    mail.sendMail(products);
+                }
+                res.redirect('/');
+            });
+        }else{
+            fs.unlinkSync(req.file.path, (err) => {
+                if (err) {
+                    throw err;
+                }
+            });
+            res.send(`Error saving product: ${val.error}`);
         }
-        res.redirect('/');
-    });
-
-
+    }else{
+        res.send(`Photo is required`);
+    }
 });
 
-app.get('/list' , (req , res)=>{
+//List all products
+app.get('/listar' , (req , res)=>{
     model.product.find({}, (err, data) =>{
         data.forEach( product => {
             product.photo = `${req.protocol}://${req.get('host')}/get-img?name=${product.photo}`;
         });
-        console.log(data);
         if(err) throw new Error(`Query error: ${err}`);
         res.render('table',{data});
     });
 });
 
+//Set email in config file
 app.post('/set-correo' , async (req , res) => {
-    try{
-        await fs.promises.writeFile('./correo.dat', req.body.mail);
-        res.redirect('/');
-    }catch(error){
-        console.log(`Error writing file:  ${error}`);
+
+    let email = req.body.mail
+
+    let val = validation.validateEmail({email});
+    if(val.result){
+        try{
+            await fs.promises.writeFile('./correo.dat', email);
+            res.redirect('/');
+        }catch(error){
+            console.log(`Error writing file:  ${error}`);
+        }
+    }else{
+        res.send(`Error saving email: ${val.error}`);
     }
 });
-
+//Set email view
 app.get('/set-correo' , (req , res)=>{
     res.render('mail-form');
 });
 
-
+//Get product img
 app.get('/get-img' , (req , res)=>{
     let data = req.query;
     res.sendFile(`${process.cwd()}/uploads/${data.name}`);

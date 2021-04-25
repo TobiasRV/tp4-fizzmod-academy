@@ -10,17 +10,29 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const mailOptions = {
-    from: 'nodemail2092@gmail.com',
-    to: '',
-    subject: '10 Productos alcanzados!!!',
-    html: `<h1>Usted a cargado 10 productos</h1>`
-}
+const sendMail = async (data) => {
 
-const sendMail = async () => {
-
-    let mail = await fs.promises.readFile('./correo.dat', 'utf-8');
-    mailOptions.to = mail;
+    let email = await fs.promises.readFile('./correo.dat', 'utf-8');
+    const mailOptions = {
+        from: 'nodemail2092@gmail.com',
+        to: email,
+        subject: '10 Productos alcanzados!!!',
+        html: `
+        <div>
+            <h2 style="text-align:center;">Listado de Productos:</h2>
+            <ul>${(data.length == 0)
+                ?'<h2 style="text-align:center;">Empty DB</h2>'
+                :data.map(product => (`
+                <li style="margin: 0;">
+                    <p style="margin: 0;">
+                        Nombre: <strong>${product.name}</strong>,
+                        Precio: <strong>$${product.price}</strong>,
+                        Descripción: <strong>${product.description}</strong>
+                    </p>
+                </li>`))}
+            </ul>
+        </div>`
+    }
     transporter.sendMail(mailOptions, (err, info) => {
         if(err){
             console.log(err);
